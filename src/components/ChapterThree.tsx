@@ -25,33 +25,33 @@ const questions: Question[] = [
         id: 2,
         question: "You studied hard for a test but did not get the marks you expected. What emotion might you feel?",
         options: [
-            { label: "A", text: "Disappointed" },
-            { label: "B", text: "Sleepy" },
-            { label: "C", text: "Amused" }
+            { label: "A", text: "Sleepy" },
+            { label: "B", text: "Amused" },
+            { label: "C", text: "Disappointed" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "C",
         description: "Feeling disappointed shows that you care about your goals and efforts."
     },
     {
         id: 3,
         question: "Your classmate wins a competition that you also participated in. What could you feel?",
         options: [
-            { label: "A", text: "Proud of them" },
-            { label: "B", text: "Angry at everyone" },
-            { label: "C", text: "Confused" }
+            { label: "A", text: "Confused" },
+            { label: "B", text: "Proud of them" },
+            { label: "C", text: "Angry at everyone" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "B",
         description: "Being proud of others' success is a sign of a great sport!"
     },
     {
         id: 4,
         question: "You are about to perform on stage in front of many people. How might you feel before starting?",
         options: [
-            { label: "A", text: "Nervous" },
-            { label: "B", text: "Bored" },
-            { label: "C", text: "Hungry" }
+            { label: "A", text: "Bored" },
+            { label: "B", text: "Hungry" },
+            { label: "C", text: "Nervous" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "C",
         description: "Feeling nervous gives you the adrenaline you need to do your best!"
     },
     {
@@ -69,33 +69,33 @@ const questions: Question[] = [
         id: 6,
         question: "Your friend looks quiet and does not talk during lunch. What might they be feeling?",
         options: [
-            { label: "A", text: "Upset" },
-            { label: "B", text: "Excited" },
-            { label: "C", text: "Energetic" }
+            { label: "A", text: "Energetic" },
+            { label: "B", text: "Upset" },
+            { label: "C", text: "Excited" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "B",
         description: "When someone is unusually quiet, they might be upset. It's nice to check on them."
     },
     {
         id: 7,
         question: "You tried something new, like learning to ride a bicycle, and finally succeeded. How might you feel?",
         options: [
-            { label: "A", text: "Proud and excited" },
+            { label: "A", text: "Angry" },
             { label: "B", text: "Sleepy" },
-            { label: "C", text: "Angry" }
+            { label: "C", text: "Proud and excited" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "C",
         description: "Overcoming a challenge brings a great rush of pride and excitement!"
     },
     {
         id: 8,
         question: "Someone accidentally bumps into you and says sorry. What could you feel?",
         options: [
-            { label: "A", text: "Understanding" },
-            { label: "B", text: "Furious forever" },
+            { label: "A", text: "Furious forever" },
+            { label: "B", text: "Understanding" },
             { label: "C", text: "Confused" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "B",
         description: "Accidents happen. Being understanding helps everyone move on happily."
     },
     {
@@ -113,11 +113,11 @@ const questions: Question[] = [
         id: 10,
         question: "Your friend shares their snack with you when you forgot yours. How might you feel?",
         options: [
-            { label: "A", text: "Grateful" },
+            { label: "A", text: "Bored" },
             { label: "B", text: "Angry" },
-            { label: "C", text: "Bored" }
+            { label: "C", text: "Grateful" }
         ],
-        correctAnswer: "A",
+        correctAnswer: "C",
         description: "Sharing brings people together and spreads the feeling of gratitude."
     }
 ];
@@ -169,21 +169,22 @@ export default function ChapterThree() {
     };
 
     const renderSimulation = (id: number) => {
-        let imageUrl = '';
-        const baseProps = '?width=600&height=400&nologo=true';
+        let prompt = '';
         switch(id) {
-            case 1: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20sad%20child%20watching%20friends%20play%20without%20them%20in%20a%20school%20playground%2C%20pastel%20colors${baseProps}`; break; // Left out
-            case 2: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20disappointed%20child%20looking%20at%20a%20test%20paper%20with%20a%20bad%20grade%2C%20pastel%20colors${baseProps}`; break; // Disappointed
-            case 3: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20child%20happily%20clapping%20for%20a%20friend%20holding%20a%20gold%20trophy%2C%20pastel%20colors${baseProps}`; break; // Trophy
-            case 4: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20nervous%20child%20standing%20on%20stage%20with%20a%20microphone%20behind%20curtains%2C%20pastel%20colors${baseProps}`; break; // Stage microphone
-            case 5: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20group%20of%20kids%20cheering%20and%20high-fiving%20a%20teacher%2C%20teamwork%2C%20pastel%20colors${baseProps}`; break; // Teamwork high-fives
-            case 6: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20quiet%20upset%20child%20sitting%20alone%20at%20a%20lunch%20table%2C%20pastel%20colors${baseProps}`; break; // Quiet alone
-            case 7: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20proud%20happy%20child%20riding%20a%20bicycle%20for%20the%20first%20time%20in%20a%20park%2C%20pastel%20colors${baseProps}`; break; // Bicycle
-            case 8: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20two%20children%20bumping%20into%20each%20other%20and%20smiling%20understandingly%2C%20pastel%20colors${baseProps}`; break; // Bumping
-            case 9: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20nervous%20child%20checking%20empty%20backpack%20while%20teacher%20asks%20for%20homework%2C%20pastel%20colors${baseProps}`; break; // Homework
-            case 10: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20child%20happily%20sharing%20a%20lunch%20snack%20with%20a%20grateful%20friend%2C%20pastel%20colors${baseProps}`; break; // Sharing kids
+            case 1: prompt = '3D Pixar style, sad child watching friends play in playground, soft pastel colors'; break;
+            case 2: prompt = '3D Pixar style, disappointed student looking at a school test paper, soft pastel colors'; break;
+            case 3: prompt = '3D Pixar style, child happily clapping for a friend holding a gold trophy, soft pastel colors'; break;
+            case 4: prompt = '3D Pixar style, nervous child standing on stage with a microphone, soft pastel colors'; break;
+            case 5: prompt = '3D Pixar style, group of kids cheering and high-fiving in a classroom, soft pastel colors'; break;
+            case 6: prompt = '3D Pixar style, quiet upset child sitting alone at a lunch table, soft pastel colors'; break;
+            case 7: prompt = '3D Pixar style, proud happy child riding a bicycle in a park, soft pastel colors'; break;
+            case 8: prompt = '3D Pixar style, two children bumping into each other and smiling, soft pastel colors'; break;
+            case 9: prompt = '3D Pixar style, nervous child checking empty backpack in classroom, soft pastel colors'; break;
+            case 10: prompt = '3D Pixar style, happy child sharing a lunch snack with a grateful friend, soft pastel colors'; break;
             default: return null;
         }
+
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=600&height=400&nologo=true&seed=42`;
 
         return (
             <div className="flex justify-center items-center w-full pt-4 pb-2">
