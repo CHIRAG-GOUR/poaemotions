@@ -1,5 +1,5 @@
 /// <reference types="@react-three/fiber" />
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as faceapi from '@vladmandic/face-api';
 import { Camera, Loader2 } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -23,7 +23,7 @@ function PetMesh({ emotion }: { emotion: string }) {
   const targetConfig = EMOTIONS_CONFIG[emotion] || EMOTIONS_CONFIG.neutral;
   const targetColor = new THREE.Color(targetConfig.color);
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (groupRef.current) {
         groupRef.current.scale.x = THREE.MathUtils.lerp(groupRef.current.scale.x, targetConfig.scale[0], 0.05);
         groupRef.current.scale.y = THREE.MathUtils.lerp(groupRef.current.scale.y, targetConfig.scale[1], 0.05);

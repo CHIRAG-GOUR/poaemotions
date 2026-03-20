@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Activity, Brain, Smile, Frown, Compass, CheckCircle2, MessageCircle, HeartPulse, UserPlus, Play, Gift, Award, AlertCircle } from 'lucide-react';
+import { Eye, Activity, Brain, Smile, Compass, CheckCircle2, HeartPulse, UserPlus, Play, Gift, Award, AlertCircle } from 'lucide-react';
 import SimonSaysFeelings from './SimonSaysFeelings';
-import FacialStoryUnlock from './FacialStoryUnlock';
 import CameraEmotionWheel from './CameraEmotionWheel';
 
 const ChapterTwoOne = () => {

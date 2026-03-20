@@ -5,7 +5,7 @@ import { PerspectiveCamera, Sky } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { motion, AnimatePresence } from 'framer-motion';
 import Scene3D from './components/Scene3D';
-import { Smile, MessageCircleHeart, Lightbulb, Play, Video, Camera } from 'lucide-react';
+import { Smile, MessageCircleHeart, Lightbulb, Play, Video } from 'lucide-react';
 import MoodMirror from './components/MoodMirror';
 import ChapterThree from './components/ChapterThree';
 import ChapterTwoOne from './components/ChapterTwoOne';

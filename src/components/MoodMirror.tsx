@@ -194,12 +194,13 @@ export default function MoodMirror() {
 
           if (detections) {
             const expressions = detections.expressions;
+            const expressionsDict = expressions as unknown as Record<string, number>;
             const maxEmotion = Object.keys(expressions).filter(k => k !== 'asSortedArray').reduce((a, b) =>        
-              (expressions as any)[a] > (expressions as any)[b] ? a : b
+              expressionsDict[a] > expressionsDict[b] ? a : b
             );
             
             // Added confidence check (0.4) so it doesn't jump randomly on low confidence expressions
-            if (maxEmotion && ((expressions as any)[maxEmotion] as number) > 0.4) {
+            if (maxEmotion && expressionsDict[maxEmotion] > 0.4) {
                setCurrentEmotion(prev => prev !== maxEmotion ? maxEmotion : prev);
             }
           }

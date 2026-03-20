@@ -974,8 +974,6 @@ function RainbowBridge({ from, to, height = 4 }: {
               const cx = (x1 + x2) / 2;
               const cy = (arc1 + arc2) / 2 + from[1];
               const cz = (z1 + z2) / 2;
-              const dx = x2 - x1, dy = arc2 - arc1, dz = z2 - z1;
-              const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
               return (
                 <mesh key={i} position={[cx + offset * 0.3, cy, cz + offset * 0.3]}>
                   <sphereGeometry args={[0.12, 4, 4]} />

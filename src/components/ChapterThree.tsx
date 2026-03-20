@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Trophy, Star, Smile, Frown, Users, FileText, Medal, Mic, GraduationCap, CloudRain, Bike, Handshake, BookX, Apple } from 'lucide-react';
+import { CheckCircle2, XCircle, Trophy, Star } from 'lucide-react';
 interface Question {
     id: number;
     question: string;
