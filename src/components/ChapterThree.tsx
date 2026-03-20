@@ -168,40 +168,6 @@ export default function ChapterThree() {
         }
     };
 
-    const renderSimulation = (id: number) => {
-        let prompt = '';
-        switch(id) {
-            case 1: prompt = '3D Pixar style, sad child watching friends play in playground, soft pastel colors'; break;
-            case 2: prompt = '3D Pixar style, disappointed student looking at a school test paper, soft pastel colors'; break;
-            case 3: prompt = '3D Pixar style, child happily clapping for a friend holding a gold trophy, soft pastel colors'; break;
-            case 4: prompt = '3D Pixar style, nervous child standing on stage with a microphone, soft pastel colors'; break;
-            case 5: prompt = '3D Pixar style, group of kids cheering and high-fiving in a classroom, soft pastel colors'; break;
-            case 6: prompt = '3D Pixar style, quiet upset child sitting alone at a lunch table, soft pastel colors'; break;
-            case 7: prompt = '3D Pixar style, proud happy child riding a bicycle in a park, soft pastel colors'; break;
-            case 8: prompt = '3D Pixar style, two children bumping into each other and smiling, soft pastel colors'; break;
-            case 9: prompt = '3D Pixar style, nervous child checking empty backpack in classroom, soft pastel colors'; break;
-            case 10: prompt = '3D Pixar style, happy child sharing a lunch snack with a grateful friend, soft pastel colors'; break;
-            default: return null;
-        }
-
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=600&height=400&nologo=true&seed=42`;
-
-        return (
-            <div className="flex justify-center items-center w-full pt-4 pb-2">
-                <div className="relative w-[320px] md:w-[400px] h-48 md:h-56 rounded-2xl overflow-hidden shadow-sm border-2 border-gray-200 bg-gray-50 flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-bold z-0 animate-pulse text-sm">Loading visual...</div>
-                    <img 
-                        src={imageUrl} 
-                        alt="Activity scenario" 
-                        className="absolute inset-0 w-full h-full object-cover z-10"
-                        loading="lazy"
-                        key={imageUrl}
-                    />
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="w-full animate-fade-in relative">
             <div className="w-full mx-auto px-2 py-4">
@@ -235,12 +201,6 @@ export default function ChapterThree() {
                             >
                                 <div className="p-4 md:p-12 relative overflow-hidden bg-white/60 border-2 border-white/60 shadow-2xl rounded-3xl">
                                     
-                                    {/* Experiential Simulation Section */}
-                                    <div className="mb-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl p-4 border-2 border-white shadow-inner overflow-hidden relative">
-                                        <div className="absolute top-2 left-4 text-blue-200 font-black text-4xl opacity-50 z-0">?</div>
-                                        {renderSimulation(questions[currentQuestion].id)}
-                                    </div>
-
                                     <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-4 leading-relaxed">
                                         <span className="text-blue-600 mr-3 text-4xl">{questions[currentQuestion].id}.</span>
                                         {questions[currentQuestion].question}
