@@ -199,7 +199,7 @@ export default function MoodMirror() {
             );
             
             // Added confidence check (0.4) so it doesn't jump randomly on low confidence expressions
-            if (maxEmotion && expressions[maxEmotion as keyof faceapi.FaceExpressions] > 0.4) {
+            if (maxEmotion && ((expressions as any)[maxEmotion] as number) > 0.4) {
                setCurrentEmotion(prev => prev !== maxEmotion ? maxEmotion : prev);
             }
           }
