@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Text, Decal } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -213,12 +213,25 @@ function getFaceTexture(emotion: string): THREE.CanvasTexture {
    GLOBAL TIMELINE — 60s loop
    ═══════════════════════════════════════════════ */
 const LOOP = 60;
-const G = { time: 0, shake: 0 };
+
+// Global registry for all characters to avoid overlap
+const CHARACTERS: { id: string; pos: THREE.Vector3; radius: number }[] = [];
+
+// Get cursor position in world space
+const G = { time: 0, shake: 0, cursor: new THREE.Vector3() };
 
 function TimelineTicker() {
+  const { mouse, camera } = useThree();
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const raycaster = new THREE.Raycaster();
+
   useFrame((_, d) => {
     G.time = (G.time + d) % LOOP;
     G.shake *= 0.9;
+    
+    // Update cursor world position
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.ray.intersectPlane(plane, G.cursor);
   });
   return null;
 }
@@ -238,10 +251,11 @@ interface EmojiProps {
   bodyScale?: number;
   idleAnim: 'bounce' | 'sway' | 'tremble' | 'spin' | 'wave' | 'stomp';
   actionSeq: { start: number; end: number; action: string }[];
+  behavior?: 'follow' | 'run' | 'patrol';
 }
 
 function EmojiCharacter({
-  emotion, color, label, waypoints, speed, bodyScale = 1, idleAnim, actionSeq,
+  emotion, color, label, waypoints, speed, bodyScale = 1, idleAnim, actionSeq, behavior = 'patrol'
 }: EmojiProps) {
   const outerRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -257,16 +271,28 @@ function EmojiCharacter({
   const torsoRef = useRef<THREE.Group>(null);
 
   const s = useRef({
+    id: Math.random().toString(36).slice(2),
     wpIdx: 1,
     pos: new THREE.Vector3(...waypoints[0]),
     target: new THREE.Vector3(...(waypoints[1] || waypoints[0])),
     angle: 0,
     cycle: Math.random() * 10,
+    radius: bodyScale * 1.5 // approximate collision radius
   });
 
   useFrame((_, delta) => {
     if (!outerRef.current || !bodyRef.current) return;
     const st = s.current;
+    
+    // Register or update global position
+    let charMatch = CHARACTERS.find(c => c.id === st.id);
+    if (!charMatch) {
+      charMatch = { id: st.id, pos: st.pos, radius: st.radius };
+      CHARACTERS.push(charMatch);
+    } else {
+      charMatch.pos.copy(st.pos);
+    }
+    
     const t = G.time;
     st.cycle += delta;
     const c = st.cycle;
@@ -282,19 +308,66 @@ function EmojiCharacter({
       }
     }
 
-    // Waypoint patrol
-    const dir = new THREE.Vector3().subVectors(st.target, st.pos);
-    const dist = dir.length();
-    if (dist < 0.3) {
-      st.wpIdx = (st.wpIdx + 1) % waypoints.length;
-      st.target.set(...waypoints[st.wpIdx]);
+    // Behavior logic (Cursor Interaction vs Patrol)
+    let moveDir = new THREE.Vector3();
+    let isWalking = false;
+    let targetDist = 0;
+
+    const cursorDist = st.pos.distanceTo(G.cursor);
+    
+    if (behavior === 'follow' && cursorDist > 2) {
+      // Follow cursor
+      targetDist = cursorDist;
+      moveDir.subVectors(G.cursor, st.pos).normalize();
+      isWalking = true;
+      st.target.copy(G.cursor);
+    } else if (behavior === 'run' && cursorDist < 6) {
+      // Run away from cursor
+      targetDist = cursorDist;
+      moveDir.subVectors(st.pos, G.cursor).normalize();
+      isWalking = true;
+      st.target.copy(st.pos).add(moveDir.clone().multiplyScalar(2));
     } else {
-      dir.normalize();
-      st.pos.addScaledVector(dir, Math.min(speed * delta, dist));
-      st.angle = lerpA(st.angle, Math.atan2(dir.x, dir.z), 0.08);
+      // Normal Patrol
+      moveDir.subVectors(st.target, st.pos);
+      targetDist = moveDir.length();
+      if (targetDist < 0.3) {
+        st.wpIdx = (st.wpIdx + 1) % waypoints.length;
+        st.target.set(...waypoints[st.wpIdx]);
+      } else {
+        moveDir.normalize();
+        isWalking = true;
+      }
     }
 
-    const walk = dist > 0.3 ? 1 : 0;
+    // Collision Avoidance (Boids Separation)
+    const avoidance = new THREE.Vector3();
+    let collisionCount = 0;
+    for (const other of CHARACTERS) {
+      if (other.id === st.id) continue;
+      const d = st.pos.distanceTo(other.pos);
+      const minDistance = st.radius + other.radius;
+      if (d < minDistance) {
+        const repulsion = new THREE.Vector3().subVectors(st.pos, other.pos).normalize();
+        repulsion.multiplyScalar((minDistance - d) / minDistance);
+        avoidance.add(repulsion);
+        collisionCount++;
+      }
+    }
+    
+    if (collisionCount > 0) {
+      // Pushed by others
+      avoidance.divideScalar(collisionCount).multiplyScalar(speed * delta * 2);
+      st.pos.add(avoidance);
+    }
+
+    if (isWalking && (act === null || act === 'slouch_walk' || act === 'run_panic' || act === 'pace')) {
+      const step = Math.min(speed * delta * (behavior === 'run' ? 1.5 : 1), targetDist);
+      st.pos.addScaledVector(moveDir, step);
+      st.angle = lerpA(st.angle, Math.atan2(moveDir.x, moveDir.z), 0.1);
+    }
+
+    const walk = isWalking ? 1 : 0;
     const walkFreq = 8;
     const walkAmp = 0.5;
     const bob = Math.abs(Math.sin(c * walkFreq)) * 0.12 * walk;
@@ -1058,85 +1131,84 @@ export default function Scene3D() {
       <pointLight position={[-8, 3, 5]} intensity={2} color="#FF69B4" distance={15} />
       <pointLight position={[8, 3, -5]} intensity={2} color="#7C4DFF" distance={15} />
 
-      {/* Deep gradient sky */}
-      <color attach="background" args={['#1a0a2e']} />
-      <fog attach="fog" args={['#1a0a2e', 25, 55]} />
+      {/* Atmospheric Fog matching the sky */}
+      <fog attach="fog" args={['#e0f2fe', 25, 65]} />
 
       <TimelineTicker />
       <CinematicCamera />
 
       {/* ═══ FLOATING HEART PLATFORMS ═══ */}
-      <HeartPlatform position={[-10, 5, -6]} scale={1.2} color="#FF6B9D" />
-      <HeartPlatform position={[9, 7, 4]} scale={0.9} color="#E040FB" />
-      <HeartPlatform position={[0, 9, -10]} scale={0.7} color="#FF4081" />
+      <HeartPlatform position={[-18, 12, -10]} scale={1.2} color="#FF6B9D" />
+      <HeartPlatform position={[16, 14, 8]} scale={0.9} color="#E040FB" />
+      <HeartPlatform position={[0, 16, -18]} scale={0.7} color="#FF4081" />
 
       {/* ═══ CLOUD CITY PLATFORMS ═══ */}
-      <CloudPlatform position={[-7, 8, 5]} />
-      <CloudPlatform position={[6, 10, -8]} />
-      <CloudPlatform position={[12, 6, 2]} />
+      <CloudPlatform position={[-12, 16, 8]} />
+      <CloudPlatform position={[10, 20, -12]} />
+      <CloudPlatform position={[18, 14, 4]} />
 
       {/* ═══ CANDY BUILDINGS — Main Town ═══ */}
-      <CandyBuilding position={[-5, 0, -3]} h={3.5} color="#FF69B4" roofColor="#FFD700" />
-      <CandyBuilding position={[5, 0, -4]} h={4} color="#7C4DFF" roofColor="#FF6D00" />
-      <CandyBuilding position={[-7, 0, 3]} h={2.8} color="#00BCD4" roofColor="#E040FB" />
-      <CandyBuilding position={[7, 0, 5]} h={3.2} color="#FF6D00" roofColor="#00E5FF" />
-      <CandyBuilding position={[0, 0, -7]} h={5} color="#E040FB" roofColor="#FFD700" />
-      <CandyBuilding position={[-3, 0, 6]} h={2.5} color="#FFD54F" roofColor="#FF69B4" />
-      <CandyBuilding position={[10, 0, -1]} h={3} color="#66BB6A" roofColor="#FFAB40" />
+      <CandyBuilding position={[-10, 0, -6]} h={3.5} color="#FF69B4" roofColor="#FFD700" />
+      <CandyBuilding position={[12, 0, -8]} h={4} color="#7C4DFF" roofColor="#FF6D00" />
+      <CandyBuilding position={[-14, 0, 6]} h={2.8} color="#00BCD4" roofColor="#E040FB" />
+      <CandyBuilding position={[14, 0, 8]} h={3.2} color="#FF6D00" roofColor="#00E5FF" />
+      <CandyBuilding position={[0, 0, -14]} h={5} color="#E040FB" roofColor="#FFD700" />
+      <CandyBuilding position={[-6, 0, 12]} h={2.5} color="#FFD54F" roofColor="#FF69B4" />
+      <CandyBuilding position={[16, 0, -2]} h={3} color="#66BB6A" roofColor="#FFAB40" />
 
       {/* ═══ CANDY FOREST ═══ */}
-      <CandyTree position={[-3, 0, -5]} h={3} color="#E040FB" />
-      <CandyTree position={[3, 0, -6]} h={2.5} color="#FF69B4" />
-      <CandyTree position={[-8, 0, -1]} h={3.5} color="#00E5FF" />
-      <CandyTree position={[8, 0, 2]} h={2.8} color="#FFD700" />
-      <CandyTree position={[-6, 0, -6]} h={2.2} color="#7C4DFF" />
-      <CandyTree position={[6, 0, 7]} h={3.2} color="#FF6D00" />
-      <CandyTree position={[-10, 0, 0]} h={2.5} color="#66BB6A" />
-      <CandyTree position={[11, 0, -4]} h={2.8} color="#FF4081" />
-      <CandyTree position={[-1, 0, 8]} h={2.0} color="#CE93D8" />
-      <CandyTree position={[4, 0, 8]} h={2.7} color="#00BCD4" />
+      <CandyTree position={[-6, 0, -10]} h={3} color="#E040FB" />
+      <CandyTree position={[6, 0, -12]} h={2.5} color="#FF69B4" />
+      <CandyTree position={[-16, 0, -2]} h={3.5} color="#00E5FF" />
+      <CandyTree position={[15, 0, 3]} h={2.8} color="#FFD700" />
+      <CandyTree position={[-12, 0, -12]} h={2.2} color="#7C4DFF" />
+      <CandyTree position={[12, 0, 12]} h={3.2} color="#FF6D00" />
+      <CandyTree position={[-18, 0, 0]} h={2.5} color="#66BB6A" />
+      <CandyTree position={[18, 0, -8]} h={2.8} color="#FF4081" />
+      <CandyTree position={[-2, 0, 15]} h={2.0} color="#CE93D8" />
+      <CandyTree position={[8, 0, 14]} h={2.7} color="#00BCD4" />
 
       {/* ═══ GIANT MUSHROOMS ═══ */}
-      <GiantMushroom position={[-4, 0, 2]} h={3} color="#FF6B9D" />
-      <GiantMushroom position={[3, 0, 3]} h={2.5} color="#BA68C8" />
-      <GiantMushroom position={[9, 0, -6]} h={2} color="#EF5350" />
-      <GiantMushroom position={[-9, 0, -4]} h={3.5} color="#FFB74D" />
+      <GiantMushroom position={[-8, 0, 6]} h={3} color="#FF6B9D" />
+      <GiantMushroom position={[8, 0, 7]} h={2.5} color="#BA68C8" />
+      <GiantMushroom position={[15, 0, -10]} h={2} color="#EF5350" />
+      <GiantMushroom position={[-16, 0, -8]} h={3.5} color="#FFB74D" />
 
       {/* ═══ CRYSTAL CLUSTERS ═══ */}
-      <CrystalCluster position={[-2, 0, -3]} color="#7C4DFF" />
-      <CrystalCluster position={[6, 0, 0]} color="#00E5FF" />
-      <CrystalCluster position={[-6, 0, 5]} color="#E040FB" />
-      <CrystalCluster position={[2, 0, 6]} color="#FF69B4" />
+      <CrystalCluster position={[-4, 0, -6]} color="#7C4DFF" />
+      <CrystalCluster position={[10, 0, 0]} color="#00E5FF" />
+      <CrystalCluster position={[-12, 0, 10]} color="#E040FB" />
+      <CrystalCluster position={[4, 0, 12]} color="#FF69B4" />
 
       {/* ═══ GLOWING NEON PATHWAYS ═══ */}
       <NeonPath
         color="#7C4DFF"
-        points={[[-8, 0, 0], [-4, 0, 0], [0, 0, 0], [4, 0, 0], [8, 0, 0]]}
+        points={[[-16, 0, 0], [-8, 0, 0], [0, 0, 0], [8, 0, 0], [16, 0, 0]]}
       />
       <NeonPath
         color="#FF69B4"
-        points={[[0, 0, -8], [0, 0, -4], [0, 0, 0], [0, 0, 4], [0, 0, 8]]}
+        points={[[0, 0, -16], [0, 0, -8], [0, 0, 0], [0, 0, 8], [0, 0, 16]]}
       />
       <NeonPath
         color="#FFD700"
-        points={[[-6, 0, -6], [-3, 0, -3], [0, 0, 0], [3, 0, 3], [6, 0, 6]]}
+        points={[[-12, 0, -12], [-6, 0, -6], [0, 0, 0], [6, 0, 6], [12, 0, 12]]}
       />
 
       {/* ═══ RAINBOW BRIDGE ═══ */}
-      <RainbowBridge from={[-8, 0, -4]} to={[8, 0, 4]} height={5} />
+      <RainbowBridge from={[-14, 0, -8]} to={[14, 0, 8]} height={8} />
 
       {/* ═══ FLOATING GEMS ═══ */}
-      <FloatingGem position={[-3, 3, 2]} color="#00E5FF" />
-      <FloatingGem position={[4, 4, -3]} color="#FFD700" />
-      <FloatingGem position={[0, 5, 5]} color="#FF69B4" />
-      <FloatingGem position={[-6, 3.5, -2]} color="#7C4DFF" />
-      <FloatingGem position={[7, 2.5, 1]} color="#E040FB" />
-      <FloatingGem position={[2, 6, -6]} color="#FF6D00" />
+      <FloatingGem position={[-6, 6, 4]} color="#00E5FF" />
+      <FloatingGem position={[8, 8, -6]} color="#FFD700" />
+      <FloatingGem position={[0, 9, 10]} color="#FF69B4" />
+      <FloatingGem position={[-12, 7, -4]} color="#7C4DFF" />
+      <FloatingGem position={[14, 5, 2]} color="#E040FB" />
+      <FloatingGem position={[4, 11, -12]} color="#FF6D00" />
 
       {/* ═══ FLOATING RINGS ═══ */}
-      <FloatingRing position={[0, 8, 0]} color="#FFD700" size={3} />
-      <FloatingRing position={[-5, 5, -5]} color="#FF69B4" size={1.8} />
-      <FloatingRing position={[6, 6, 3]} color="#7C4DFF" size={2.2} />
+      <FloatingRing position={[0, 14, 0]} color="#FFD700" size={4} />
+      <FloatingRing position={[-10, 10, -10]} color="#FF69B4" size={2.5} />
+      <FloatingRing position={[12, 12, 6]} color="#7C4DFF" size={3} />
 
       {/* ═══ SPARKLE PARTICLES ═══ */}
       <Sparkles />
@@ -1145,21 +1217,15 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="happy" color="#FFD700" face="😄" label="HAPPY"
-        bodyScale={1} idleAnim="bounce" speed={1.8}
-        waypoints={[[-3, 0, -2], [0, 0, -3], [3, 0, -2], [4, 0, 1], [2, 0, 4], [-2, 0, 4], [-4, 0, 1]]}
-        actionSeq={[
-          { start: 0, end: 4, action: 'jump_joy' },
-          { start: 12, end: 16, action: 'dance' },
-          { start: 24, end: 28, action: 'clap' },
-          { start: 36, end: 40, action: 'jump_joy' },
-          { start: 48, end: 52, action: 'dance' },
-        ]}
+        bodyScale={1} idleAnim="bounce" speed={3.0} behavior="follow"
+        waypoints={[[-6, 0, -4], [0, 0, -6], [6, 0, -4], [8, 0, 2], [4, 0, 8], [-4, 0, 8], [-8, 0, 2]]}
+        actionSeq={[]}
       />
 
       <EmojiCharacter
         emotion="sad" color="#4A90D9" face="😢" label="SAD"
-        bodyScale={0.9} idleAnim="sway" speed={0.7}
-        waypoints={[[-7, 0, 4], [-7, 0, 0], [-5, 0, -3], [-3, 0, -5], [-1, 0, -3]]}
+        bodyScale={0.9} idleAnim="sway" speed={1.4}
+        waypoints={[[-14, 0, 8], [-14, 0, 0], [-10, 0, -6], [-6, 0, -10], [-2, 0, -6]]}
         actionSeq={[
           { start: 4, end: 10, action: 'cry' },
           { start: 20, end: 26, action: 'slouch_walk' },
@@ -1170,8 +1236,8 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="angry" color="#E74C3C" face="😠" label="ANGRY"
-        bodyScale={1.1} idleAnim="stomp" speed={1.5}
-        waypoints={[[-4, 0, -6], [0, 0, -6], [4, 0, -5], [6, 0, -3], [4, 0, -1], [-2, 0, -2], [-4, 0, -4]]}
+        bodyScale={1.1} idleAnim="stomp" speed={2.5}
+        waypoints={[[-8, 0, -12], [0, 0, -12], [8, 0, -10], [12, 0, -6], [8, 0, -2], [-4, 0, -4], [-8, 0, -8]]}
         actionSeq={[
           { start: 3, end: 7, action: 'stomp_ground' },
           { start: 15, end: 19, action: 'fist_shake' },
@@ -1183,34 +1249,26 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="scared" color="#9B59B6" face="😨" label="SCARED"
-        bodyScale={0.85} idleAnim="tremble" speed={2.5}
-        waypoints={[[7, 0, -2], [8, 0, 2], [6, 0, 5], [4, 0, 3], [6, 0, 0]]}
+        bodyScale={0.85} idleAnim="tremble" speed={4.5} behavior="run"
+        waypoints={[[14, 0, -4], [16, 0, 4], [12, 0, 10], [8, 0, 6], [12, 0, 0]]}
         actionSeq={[
           { start: 5, end: 9, action: 'hide' },
-          { start: 18, end: 21, action: 'run_panic' },
           { start: 30, end: 34, action: 'hide' },
-          { start: 42, end: 45, action: 'run_panic' },
           { start: 52, end: 56, action: 'hide' },
         ]}
       />
 
       <EmojiCharacter
         emotion="excited" color="#FF8C00" face="🤩" label="EXCITED"
-        bodyScale={1} idleAnim="bounce" speed={2.8}
-        waypoints={[[0, 0, 6], [5, 0, 4], [7, 0, 0], [5, 0, -4], [0, 0, -6], [-5, 0, -4], [-7, 0, 0], [-5, 0, 4]]}
-        actionSeq={[
-          { start: 2, end: 5, action: 'spin_jump' },
-          { start: 14, end: 18, action: 'cheer' },
-          { start: 28, end: 31, action: 'spin_jump' },
-          { start: 40, end: 44, action: 'cheer' },
-          { start: 52, end: 55, action: 'spin_jump' },
-        ]}
+        bodyScale={1} idleAnim="bounce" speed={4.0} behavior="follow"
+        waypoints={[[0, 0, 12], [10, 0, 8], [14, 0, 0], [10, 0, -8], [0, 0, -12], [-10, 0, -8], [-14, 0, 0], [-10, 0, 8]]}
+        actionSeq={[]}
       />
 
       <EmojiCharacter
         emotion="surprised" color="#1ABC9C" face="😲" label="SURPRISED"
-        bodyScale={0.95} idleAnim="sway" speed={1.5}
-        waypoints={[[-2, 0, -3], [2, 0, -1], [-1, 0, 1], [3, 0, 3], [-2, 0, 2]]}
+        bodyScale={0.95} idleAnim="sway" speed={2.5}
+        waypoints={[[-4, 0, -6], [4, 0, -2], [-2, 0, 2], [6, 0, 6], [-4, 0, 4]]}
         actionSeq={[
           { start: 4, end: 7, action: 'jump_back' },
           { start: 16, end: 20, action: 'double_take' },
@@ -1222,8 +1280,8 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="proud" color="#DAA520" face="😤" label="PROUD"
-        bodyScale={1.15} idleAnim="stomp" speed={1}
-        waypoints={[[0, 0, 5], [0, 0, 2], [0, 0, -2], [0, 0, -5], [2, 0, -3], [-2, 0, 0]]}
+        bodyScale={1.15} idleAnim="stomp" speed={2}
+        waypoints={[[0, 0, 10], [0, 0, 4], [0, 0, -4], [0, 0, -10], [4, 0, -6], [-4, 0, 0]]}
         actionSeq={[
           { start: 2, end: 8, action: 'chest_puff' },
           { start: 18, end: 24, action: 'flex' },
@@ -1234,20 +1292,18 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="nervous" color="#82C341" face="😬" label="NERVOUS"
-        bodyScale={0.85} idleAnim="tremble" speed={1.6}
-        waypoints={[[1, 0, 0], [2, 0, -1], [1, 0, -2], [-1, 0, -2], [-2, 0, -1], [-1, 0, 0]]}
+        bodyScale={0.85} idleAnim="tremble" speed={3.5} behavior="run"
+        waypoints={[[2, 0, 0], [4, 0, -2], [2, 0, -4], [-2, 0, -4], [-4, 0, -2], [-2, 0, 0]]}
         actionSeq={[
           { start: 6, end: 12, action: 'fidget' },
-          { start: 22, end: 28, action: 'pace' },
           { start: 38, end: 44, action: 'fidget' },
-          { start: 52, end: 58, action: 'pace' },
         ]}
       />
 
       <EmojiCharacter
         emotion="disgusted" color="#27AE60" face="🤢" label="DISGUSTED"
-        bodyScale={0.9} idleAnim="sway" speed={1.1}
-        waypoints={[[8, 0, 5], [8, 0, 0], [6, 0, -4], [4, 0, -6], [2, 0, -4]]}
+        bodyScale={0.9} idleAnim="sway" speed={2.0}
+        waypoints={[[16, 0, 10], [16, 0, 0], [12, 0, -8], [8, 0, -12], [4, 0, -8]]}
         actionSeq={[
           { start: 7, end: 13, action: 'recoil' },
           { start: 23, end: 29, action: 'wave_away' },
@@ -1258,15 +1314,9 @@ export default function Scene3D() {
 
       <EmojiCharacter
         emotion="friendly" color="#E91E8F" face="🥰" label="FRIENDLY"
-        bodyScale={0.95} idleAnim="wave" speed={1.4}
-        waypoints={[[-6, 0, 0], [-3, 0, 0], [0, 0, 0], [3, 0, 0], [6, 0, 0], [3, 0, 2], [0, 0, 3], [-3, 0, 2]]}
-        actionSeq={[
-          { start: 3, end: 7, action: 'dance' },
-          { start: 15, end: 19, action: 'clap' },
-          { start: 27, end: 31, action: 'jump_joy' },
-          { start: 39, end: 43, action: 'dance' },
-          { start: 51, end: 55, action: 'clap' },
-        ]}
+        bodyScale={0.95} idleAnim="wave" speed={3.0} behavior="follow"
+        waypoints={[[-12, 0, 0], [-6, 0, 0], [0, 0, 0], [6, 0, 0], [12, 0, 0], [6, 0, 4], [0, 0, 6], [-6, 0, 4]]}
+        actionSeq={[]}
       />
 
       {/* ═══ GROUND — magical radial platform ═══ */}
@@ -1292,3 +1342,4 @@ export default function Scene3D() {
     </>
   );
 }
+
