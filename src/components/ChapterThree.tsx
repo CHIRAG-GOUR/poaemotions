@@ -170,17 +170,18 @@ export default function ChapterThree() {
 
     const renderSimulation = (id: number) => {
         let imageUrl = '';
+        const baseProps = '?width=600&height=400&nologo=true';
         switch(id) {
-            case 1: imageUrl = 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&q=80&w=600&h=400'; break; // Sad
-            case 2: imageUrl = 'https://images.unsplash.com/photo-1577880216142-8549e9488dad?auto=format&fit=crop&q=80&w=600&h=400'; break; // Disappointed
-            case 3: imageUrl = 'https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?auto=format&fit=crop&q=80&w=600&h=400'; break; // Trophy
-            case 4: imageUrl = 'https://images.unsplash.com/photo-1478224722510-48246d849a6e?auto=format&fit=crop&q=80&w=600&h=400'; break; // Stage microphone
-            case 5: imageUrl = 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=600&h=400'; break; // Teamwork high-fives
-            case 6: imageUrl = 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?auto=format&fit=crop&q=80&w=600&h=400'; break; // Quiet alone
-            case 7: imageUrl = 'https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=600&h=400'; break; // Bicycle
-            case 8: imageUrl = 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=600&h=400'; break; // Friends playing
-            case 9: imageUrl = 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600&h=400'; break; // Student classroom
-            case 10: imageUrl = 'https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&q=80&w=600&h=400'; break; // Sharing kids
+            case 1: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20sad%20child%20watching%20friends%20play%20without%20them%20in%20a%20school%20playground%2C%20pastel%20colors${baseProps}`; break; // Left out
+            case 2: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20disappointed%20child%20looking%20at%20a%20test%20paper%20with%20a%20bad%20grade%2C%20pastel%20colors${baseProps}`; break; // Disappointed
+            case 3: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20child%20happily%20clapping%20for%20a%20friend%20holding%20a%20gold%20trophy%2C%20pastel%20colors${baseProps}`; break; // Trophy
+            case 4: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20nervous%20child%20standing%20on%20stage%20with%20a%20microphone%20behind%20curtains%2C%20pastel%20colors${baseProps}`; break; // Stage microphone
+            case 5: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20group%20of%20kids%20cheering%20and%20high-fiving%20a%20teacher%2C%20teamwork%2C%20pastel%20colors${baseProps}`; break; // Teamwork high-fives
+            case 6: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20quiet%20upset%20child%20sitting%20alone%20at%20a%20lunch%20table%2C%20pastel%20colors${baseProps}`; break; // Quiet alone
+            case 7: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20proud%20happy%20child%20riding%20a%20bicycle%20for%20the%20first%20time%20in%20a%20park%2C%20pastel%20colors${baseProps}`; break; // Bicycle
+            case 8: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20two%20children%20bumping%20into%20each%20other%20and%20smiling%20understandingly%2C%20pastel%20colors${baseProps}`; break; // Bumping
+            case 9: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20nervous%20child%20checking%20empty%20backpack%20while%20teacher%20asks%20for%20homework%2C%20pastel%20colors${baseProps}`; break; // Homework
+            case 10: imageUrl = `https://image.pollinations.ai/prompt/cute%203D%20pixar%20illustration%20of%20a%20child%20happily%20sharing%20a%20lunch%20snack%20with%20a%20grateful%20friend%2C%20pastel%20colors${baseProps}`; break; // Sharing kids
             default: return null;
         }
 
